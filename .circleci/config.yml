@@ -34,7 +34,7 @@ jobs:
           name: run tests
           command: |
             . venv/bin/activate
-            cd pollsapi
+            # cd pollsapi # As manage.py is outside no need for CI
             python manage.py test
 
       - store_artifacts:
