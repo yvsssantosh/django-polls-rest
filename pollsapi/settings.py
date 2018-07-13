@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     # Default apps
     'rest_framework',
     'rest_framework.authtoken',
+    'rest_framework_swagger',
 
     # Custom apps
     'polls'
