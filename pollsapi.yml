@@ -1,0 +1,62 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: polls-api
+spec:
+  type: NodePort
+  ports:
+  - name: polls-api
+    port: 8000
+    targetPort: 8000
+    protocol: TCP
+  selector:
+    app: pollsapi
+
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: polls-api
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        name: polls-api
+        app: pollsapi
+    spec:
+      containers:
+      - name: polls-api
+        image: gcr.io/test-gcp-208915/pollsapi:v1.0.0
+        resources:
+          requests:
+            cpu: 125m
+            memory: 100Mi
+          limits:
+            cpu: 200m
+            memory: 200Mi
+        imagePullPolicy: Always
+        env:
+          - name: POSTGRES_DB
+            value: pollsdb
+          - name: POSTGRES_USER
+            value: polls_admin
+          - name: POSTGRES_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: pollsdb-postgresql
+                key: postgres-password
+          - name: POLLSAPI_PG_HOST
+            value: pollsdb-postgresql.databases.svc.cluster.local
+          - name: POLLSAPI_PROXY_ACCESS_LOG
+            value: "/dev/stdout"
+          - name: POLLSAPI_ADMIN_ACCESS_LOG
+            value: "/dev/stdout"
+          - name: POLLSAPI_PROXY_ERROR_LOG
+            value: "/dev/stderr"
+          - name: POLLSAPI_ADMIN_ERROR_LOG
+            value: "/dev/stderr"
+        ports:
+        - name: polls-test-api
+          containerPort: 8000
+          protocol: TCP

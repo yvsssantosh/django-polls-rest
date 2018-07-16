@@ -1,0 +1,27 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: polls-migration
+spec:
+  template:
+    metadata:
+      name: polls-migration
+    spec:
+      containers:
+      - name: polls-migration
+        image: gcr.io/test-gcp-208915/pollsapi:v1.0.0
+        imagePullPolicy: Always
+        env:
+          - name: POSTGRES_DB
+            value: pollsdb
+          - name: POSTGRES_USER
+            value: polls_admin
+          - name: POSTGRES_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: pollsdb-postgresql
+                key: postgres-password
+          - name: POLLSAPI_PG_HOST
+            value: pollsdb-postgresql.databases.svc.cluster.local
+        command: [ "/bin/sh", "-c", "python manage.py migrate" ]
+      restartPolicy: Never
