@@ -1,0 +1,31 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: polls-collect-static
+spec:
+  template:
+    metadata:
+      name: polls-collect-static
+    spec:
+      containers:
+      - name: polls-collect-static
+        image: gcr.io/test-gcp-208915/pollsapi:v1.0.0
+        imagePullPolicy: Always
+        env:
+          - name: GS_ACCESS_KEY_ID
+            valueFrom:
+              secretKeyRef:
+                name: pollsapi-static-serve
+                key: gs_access_key_id
+          - name: GS_SECRET_ACCESS_KEY
+            valueFrom:
+              secretKeyRef:
+                name: pollsapi-static-serve
+                key: gs_secret_access_key
+          - name: GS_BUCKET_NAME
+            valueFrom:
+              secretKeyRef:
+                name: pollsapi-static-serve
+                key: gs_bucket_name
+        command: [ "/bin/sh", "-c", "python manage.py collectstatic" ]
+      restartPolicy: Never

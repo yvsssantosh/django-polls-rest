@@ -23,7 +23,8 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECRET_KEY = '*&7^3j4u46egyn97n7#&xa6xb%vyk%_*tnvpn=$+9#njh$$)(!'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
+# DEBUG = True only in Development Mode!
 
 ALLOWED_HOSTS = ["*"]
 
@@ -124,14 +125,7 @@ USE_L10N = True
 
 USE_TZ = True
 
-
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/2.0/howto/static-files/
-
-STATIC_URL = '/static/'
-
 # Rest Framework settings
-
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework.authentication.TokenAuthentication',
@@ -141,3 +135,16 @@ REST_FRAMEWORK = {
     #     'rest_framework.permissions.IsAuthenticated',
     # )
 }
+
+# STATIC_FILES_SETTINGS (CSS, JavaScript, Images)
+# https://docs.djangoproject.com/en/2.0/howto/static-files/
+
+STATIC_URL = '/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, "static")
+
+DEFAULT_FILE_STORAGE = 'storages.backends.gs.GSBotoStorage'
+STATICFILES_STORAGE = 'storages.backends.gs.GSBotoStorage'
+
+GS_ACCESS_KEY_ID = os.environ.get('GS_ACCESS_KEY_ID', None)
+GS_SECRET_ACCESS_KEY = os.environ.get('GS_SECRET_ACCESS_KEY', None)
+GS_BUCKET_NAME = os.environ.get('GS_BUCKET_NAME', None)
