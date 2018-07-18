@@ -27,5 +27,5 @@ spec:
               secretKeyRef:
                 name: pollsapi-static-serve
                 key: gs_bucket_name
-        command: [ "/bin/sh", "-c", "python manage.py collectstatic" ]
+        command: [ "/bin/sh", "-c", "python manage.py collectstatic --noinput" ]
       restartPolicy: Never

@@ -37,6 +37,21 @@ spec:
             memory: 200Mi
         imagePullPolicy: Always
         env:
+          - name: GS_ACCESS_KEY_ID
+            valueFrom:
+              secretKeyRef:
+                name: pollsapi-static-serve
+                key: gs_access_key_id
+          - name: GS_SECRET_ACCESS_KEY
+            valueFrom:
+              secretKeyRef:
+                name: pollsapi-static-serve
+                key: gs_secret_access_key
+          - name: GS_BUCKET_NAME
+            valueFrom:
+              secretKeyRef:
+                name: pollsapi-static-serve
+                key: gs_bucket_name
           - name: POSTGRES_DB
             value: pollsdb
           - name: POSTGRES_USER
