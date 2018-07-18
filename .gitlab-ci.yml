@@ -1,0 +1,28 @@
+services:
+- docker:dind
+
+before_script:
+  - apk update && apk upgrade && apk add --no-cache bash openssh
+  
+
+variables:
+  DOCKER_DRIVER: overlay2
+
+stages:
+- test
+
+test:
+  stage: test
+  image: vaeum/alpine-python3-pip3
+  before_script:
+    - pip install -r requirements.txt
+  variables:
+    POSTGRES_DB: postgres
+    POSTGRES_USER: postgres
+    POSTGRES_PASSWORD: ''
+    POLLSAPI_PG_HOST: postgres
+  services:
+    - postgres:9.6-alpine
+  script:
+    - python manage.py test
+
