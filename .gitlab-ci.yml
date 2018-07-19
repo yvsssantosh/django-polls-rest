@@ -10,6 +10,8 @@ variables:
 
 stages:
 - test
+- release
+- deploy
 
 test:
   stage: test
@@ -26,3 +28,147 @@ test:
   script:
     - python manage.py test
 
+release:
+  stage: release
+  image: docker:latest
+  before_script:
+   - export COMMIT_SHA=$(echo $CI_COMMIT_SHA | cut -c1-8)
+   - apk update
+   - apk upgrade
+   - apk add python python-dev py-pip build-base 
+   - apk add --update ca-certificates
+   - apk add --update -t deps curl
+   - apk del --purge deps
+   - rm /var/cache/apk/*
+
+  script:
+    # Build our image
+    - docker build -t $GCP_PROJECT_ID/$CI_PROJECT_NAME:$COMMIT_SHA .
+
+    # Write our GCP service account private key into a file
+    - echo $GCLOUD_SERVICE_KEY | base64 -d > ${HOME}/gcloud-service-key.json
+    
+    # Download and install Google Cloud SDK
+    - wget https://dl.google.com/dl/cloudsdk/release/google-cloud-sdk.tar.gz
+    - tar zxvf google-cloud-sdk.tar.gz && ./google-cloud-sdk/install.sh --usage-reporting=false --path-update=true
+    
+    # Update gcloud components
+    - google-cloud-sdk/bin/gcloud --quiet components update
+
+    # Give access to gcloud project
+    - google-cloud-sdk/bin/gcloud auth activate-service-account --key-file ${HOME}/gcloud-service-key.json  || die "unable to authenticate service account for gcloud"
+    
+    # Get current projects credentials to access it
+    - google-cloud-sdk/bin/gcloud container clusters get-credentials pollsapi --zone asia-south1-a --project test-gcp-208915
+    
+    # Configure container registry to push using docker
+    - docker login -u _json_key --password-stdin https://gcr.io < ${HOME}/gcloud-service-key.json
+
+    # Push the image using docker
+    - docker push $GCP_PROJECT_ID/$CI_PROJECT_NAME:$COMMIT_SHA
+  only:
+    - master
+
+migrations:
+  image: google/cloud-sdk:alpine
+  stage: deploy
+  variables:
+    KUBE_LATEST_VERSION: "v1.8.5"
+  before_script:
+   - export COMMIT_SHA=$(echo $CI_COMMIT_SHA | cut -c1-8)
+   - apk update
+   - apk upgrade
+   - apk add --update ca-certificates
+   - apk add --update -t deps curl
+   - curl -L https://storage.googleapis.com/kubernetes-release/release/${KUBE_LATEST_VERSION}/bin/linux/amd64/kubectl -o /usr/local/bin/kubectl
+   - chmod +x /usr/local/bin/kubectl
+   - apk del --purge deps
+   - rm /var/cache/apk/*
+
+  script:
+    # Write our GCP service account private key into a file
+    - echo $GCLOUD_SERVICE_KEY | base64 -d > ${HOME}/gcloud-service-key.json
+    
+    # Update gcloud components
+    - gcloud --quiet components update
+
+    # Give access to gcloud project
+    - gcloud auth activate-service-account --key-file ${HOME}/gcloud-service-key.json  || die "unable to authenticate service account for gcloud"
+    - gcloud container clusters get-credentials pollsapi --zone asia-south1-a --project test-gcp-208915
+    
+    # Run kubectl apply to apply any changes made in env variables, etc
+    - kubectl apply -f polls-migration.yml
+  environment: production
+  when: manual
+  only:
+    - master
+
+collect-static:
+  image: google/cloud-sdk:alpine
+  stage: deploy
+  variables:
+    KUBE_LATEST_VERSION: "v1.8.5"
+  before_script:
+   - export COMMIT_SHA=$(echo $CI_COMMIT_SHA | cut -c1-8)
+   - apk update
+   - apk upgrade
+   - apk add --update ca-certificates
+   - apk add --update -t deps curl
+   - curl -L https://storage.googleapis.com/kubernetes-release/release/${KUBE_LATEST_VERSION}/bin/linux/amd64/kubectl -o /usr/local/bin/kubectl
+   - chmod +x /usr/local/bin/kubectl
+   - apk del --purge deps
+   - rm /var/cache/apk/*
+
+  script:
+    # Write our GCP service account private key into a file
+    - echo $GCLOUD_SERVICE_KEY | base64 -d > ${HOME}/gcloud-service-key.json
+    
+    # Update gcloud components
+    - gcloud --quiet components update
+
+    # Give access to gcloud project
+    - gcloud auth activate-service-account --key-file ${HOME}/gcloud-service-key.json  || die "unable to authenticate service account for gcloud"
+    - gcloud container clusters get-credentials pollsapi --zone asia-south1-a --project test-gcp-208915
+    
+    # Run kubectl apply to apply any changes made in env variables, etc
+    - kubectl apply -f polls-collect-static.yml
+  environment: production
+  when: manual
+  only:
+    - master
+
+deploy:
+  image: google/cloud-sdk:alpine
+  stage: deploy
+  variables:
+    KUBE_LATEST_VERSION: "v1.8.5"
+  before_script:
+   - export COMMIT_SHA=$(echo $CI_COMMIT_SHA | cut -c1-8)
+   - apk update
+   - apk upgrade
+   - apk add --update ca-certificates
+   - apk add --update -t deps curl
+   - curl -L https://storage.googleapis.com/kubernetes-release/release/${KUBE_LATEST_VERSION}/bin/linux/amd64/kubectl -o /usr/local/bin/kubectl
+   - chmod +x /usr/local/bin/kubectl
+   - apk del --purge deps
+   - rm /var/cache/apk/*
+
+  script:
+    # Write our GCP service account private key into a file
+    - echo $GCLOUD_SERVICE_KEY | base64 -d > ${HOME}/gcloud-service-key.json
+    
+    # Update gcloud components
+    - gcloud --quiet components update
+
+    # Give access to gcloud project
+    - gcloud auth activate-service-account --key-file ${HOME}/gcloud-service-key.json  || die "unable to authenticate service account for gcloud"
+    - gcloud container clusters get-credentials pollsapi --zone asia-south1-a --project test-gcp-208915
+    
+    # Run kubectl apply to apply any changes made in env variables, etc
+    - kubectl apply -f pollsapi.yml
+
+    # Update deployment with new image
+    - kubectl set image deployment/polls-api ${CI_PROJECT_NAME}=$GCP_PROJECT_ID/$CI_PROJECT_NAME:$COMMIT_SHA
+  environment: production
+  only:
+    - master

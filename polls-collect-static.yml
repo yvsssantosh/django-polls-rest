@@ -9,7 +9,7 @@ spec:
     spec:
       containers:
       - name: polls-collect-static
-        image: gcr.io/test-gcp-208915/pollsapi:v1.0.0
+        image: gcr.io/test-gcp-208915/django-polls-rest:v1.0.0
         imagePullPolicy: Always
         env:
           - name: GS_ACCESS_KEY_ID

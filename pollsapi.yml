@@ -19,6 +19,7 @@ metadata:
   name: polls-api
 spec:
   replicas: 1
+  revisionHistoryLimit: 2
   template:
     metadata:
       labels:
@@ -26,8 +27,8 @@ spec:
         app: pollsapi
     spec:
       containers:
-      - name: polls-api
-        image: gcr.io/test-gcp-208915/pollsapi:v1.0.0
+      - name: django-polls-rest
+        image: gcr.io/test-gcp-208915/django-polls-rest:v1.0.0
         resources:
           requests:
             cpu: 125m
