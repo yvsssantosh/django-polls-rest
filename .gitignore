@@ -90,3 +90,6 @@ db.sqlite3
 
 # Django Static Files
 static/
+
+# Hypothesis local storage
+.hypothesis/
